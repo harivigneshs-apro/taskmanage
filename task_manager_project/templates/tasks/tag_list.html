@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Tags - Task Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-tags"></i> My Tags</h1>
+            <a href="{% url 'tasks:tag_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Tag
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if tags %}
+        <div class="row">
+            {% for tag in tags %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title">
+                                    <span class="badge" style="background-color: {{ tag.color }}">
+                                        {{ tag.name }}
+                                    </span>
+                                </h5>
+                                <p class="card-text text-muted">
+                                    {{ tag.task_count }} task{{ tag.task_count|pluralize }}
+                                </p>
+                                <small class="text-muted">
+                                    Created: {{ tag.created_at|date:"M d, Y" }}
+                                </small>
+                            </div>
+                            <div class="btn-group-vertical">
+                                <a href="{% url 'tasks:tag_edit' tag.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'tasks:tag_delete' tag.pk %}" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center">
+            <i class="fas fa-tags fa-5x text-muted mb-3"></i>
+            <h3>No tags found</h3>
+            <p class="text-muted">You haven't created any tags yet. Tags help organize your tasks.</p>
+            <a href="{% url 'tasks:tag_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Your First Tag
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Tasks - Task Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-list"></i> My Tasks</h1>
+            <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Task
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-filter"></i> Filters</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        {{ filter_form.search|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ filter_form.priority|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ filter_form.status|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ filter_form.due_date_from|as_crispy_field }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ filter_form.due_date_to|as_crispy_field }}
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                {% if filter_form.tags.field.queryset %}
+                <div class="mt-3">
+                    <label class="form-label">Tags:</label>
+                    <div class="row">
+                        {% for tag in filter_form.tags.field.queryset %}
+                        <div class="col-auto">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="tags" value="{{ tag.pk }}" id="tag_{{ tag.pk }}">
+                                <label class="form-check-label" for="tag_{{ tag.pk }}">
+                                    <span class="badge" style="background-color: {{ tag.color }}">{{ tag.name }}</span>
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tasks -->
+<div class="row">
+    <div class="col-12">
+        {% if page_obj %}
+        <div class="card">
+            <div class="card-body">
+                {% for task in page_obj %}
+                <div class="card mb-3 {% if task.is_overdue %}border-danger{% endif %}">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="card-title">
+                                    <a href="{% url 'tasks:task_detail' task.pk %}" class="text-decoration-none">
+                                        {{ task.title }}
+                                    </a>
+                                    {% if task.is_overdue %}
+                                    <span class="badge bg-danger ms-2">Overdue</span>
+                                    {% endif %}
+                                </h5>
+                                <p class="card-text text-muted">{{ task.description|truncatewords:20 }}</p>
+                                
+                                <!-- Tags -->
+                                {% if task.tags.all %}
+                                <div class="mb-2">
+                                    {% for tag in task.tags.all %}
+                                    <span class="badge me-1" style="background-color: {{ tag.color }}">{{ tag.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> Due: {{ task.due_date|date:"M d, Y H:i" }}<br>
+                                    <i class="fas fa-clock"></i> Created: {{ task.created_at|date:"M d, Y" }}
+                                </small>
+                            </div>
+                            
+                            <div class="col-md-3 text-end">
+                                <div class="mb-2">
+                                    <span class="badge bg-{{ task.priority }} me-1">{{ task.get_priority_display }}</span>
+                                    <span class="badge bg-{{ task.status }}">{{ task.get_status_display }}</span>
+                                </div>
+                                
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'tasks:task_detail' task.pk %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'tasks:task_edit' task.pk %}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Tasks pagination">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center">
+            <i class="fas fa-tasks fa-5x text-muted mb-3"></i>
+            <h3>No tasks found</h3>
+            <p class="text-muted">You haven't created any tasks yet or no tasks match your filters.</p>
+            <a href="{% url 'tasks:task_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Your First Task
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

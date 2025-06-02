@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Task Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>
+                    <i class="fas fa-{% if task %}edit{% else %}plus{% endif %}"></i> 
+                    {{ title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            {{ form.title|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            {{ form.description|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.due_date|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.priority|as_crispy_field }}
+                        </div>
+                        <div class="col-md-3">
+                            {{ form.status|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.assigned_to|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tags</label>
+                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                {% if form.tags.field.queryset %}
+                                    {% for tag in form.tags.field.queryset %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="tags" value="{{ tag.pk }}" 
+                                               id="tag_{{ tag.pk }}"
+                                               {% if tag in form.tags.value %}checked{% endif %}>
+                                        <label class="form-check-label" for="tag_{{ tag.pk }}">
+                                            <span class="badge me-2" style="background-color: {{ tag.color }}">
+                                                {{ tag.name }}
+                                            </span>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted">No tags available. <a href="{% url 'tasks:tag_create' %}">Create a tag</a></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% if task %}{% url 'tasks:task_detail' task.pk %}{% else %}{% url 'tasks:task_list' %}{% endif %}" 
+                                   class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Cancel
+                                </a>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 
+                                    {% if task %}Update Task{% else %}Create Task{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if task %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5><i class="fas fa-exclamation-triangle"></i> Danger Zone</h5>
+            </div>
+            <div class="card-body">
+                <p>Once you delete a task, there is no going back. Please be certain.</p>
+                <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete Task
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum datetime to current time for due_date field
+    const dueDateField = document.querySelector('input[name="due_date"]');
+    if (dueDateField) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+        dueDateField.setAttribute('min', minDateTime);
+    }
+});
+</script>
+{% endblock %}

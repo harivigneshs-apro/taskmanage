@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ task.title }} - Task Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3>
+                    {{ task.title }}
+                    {% if task.is_overdue %}
+                    <span class="badge bg-danger ms-2">Overdue</span>
+                    {% endif %}
+                </h3>
+                <div class="btn-group">
+                    <a href="{% url 'tasks:task_edit' task.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'tasks:task_delete' task.pk %}" class="btn btn-outline-danger">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Task Description -->
+                {% if task.description %}
+                <div class="mb-4">
+                    <h5>Description</h5>
+                    <p class="text-muted">{{ task.description|linebreaks }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- Task Details -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Task Information</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Priority:</strong> 
+                                <span class="badge bg-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                            </li>
+                            <li><strong>Status:</strong> 
+                                <span class="badge bg-{{ task.status }}">{{ task.get_status_display }}</span>
+                            </li>
+                            <li><strong>Due Date:</strong> {{ task.due_date|date:"M d, Y H:i" }}</li>
+                            {% if task.assigned_to %}
+                            <li><strong>Assigned To:</strong> {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>Timeline</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Created:</strong> {{ task.created_at|date:"M d, Y H:i" }}</li>
+                            <li><strong>Last Updated:</strong> {{ task.updated_at|date:"M d, Y H:i" }}</li>
+                            {% if task.completed_at %}
+                            <li><strong>Completed:</strong> {{ task.completed_at|date:"M d, Y H:i" }}</li>
+                            {% endif %}
+                            <li><strong>Days Until Due:</strong> 
+                                {% if task.days_until_due < 0 %}
+                                    <span class="text-danger">{{ task.days_until_due|add:"-1" }} days overdue</span>
+                                {% elif task.days_until_due == 0 %}
+                                    <span class="text-warning">Due today</span>
+                                {% else %}
+                                    <span class="text-success">{{ task.days_until_due }} days remaining</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Tags -->
+                {% if task.tags.all %}
+                <div class="mb-4">
+                    <h6>Tags</h6>
+                    {% for tag in task.tags.all %}
+                    <span class="badge me-2" style="background-color: {{ tag.color }}">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <!-- Quick Status Update -->
+                <div class="mb-4">
+                    <h6>Quick Status Update</h6>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-warning btn-sm status-btn" data-status="pending">
+                            <i class="fas fa-clock"></i> Pending
+                        </button>
+                        <button type="button" class="btn btn-outline-info btn-sm status-btn" data-status="in_progress">
+                            <i class="fas fa-spinner"></i> In Progress
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm status-btn" data-status="completed">
+                            <i class="fas fa-check"></i> Completed
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm status-btn" data-status="cancelled">
+                            <i class="fas fa-times"></i> Cancelled
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-comments"></i> Comments ({{ comments.count }})</h5>
+            </div>
+            <div class="card-body">
+                <!-- Add Comment Form -->
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    {{ comment_form|crispy }}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-comment"></i> Add Comment
+                    </button>
+                </form>
+                
+                <!-- Comments List -->
+                {% if comments %}
+                <div class="comments-list">
+                    {% for comment in comments %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ comment.user.get_full_name|default:comment.user.username }}</strong>
+                                <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                            </div>
+                        </div>
+                        <p class="mt-2 mb-0">{{ comment.comment|linebreaks }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Task Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="progress mb-2">
+                        {% if task.status == 'completed' %}
+                        <div class="progress-bar bg-success" style="width: 100%">100%</div>
+                        {% elif task.status == 'in_progress' %}
+                        <div class="progress-bar bg-info" style="width: 50%">50%</div>
+                        {% elif task.status == 'cancelled' %}
+                        <div class="progress-bar bg-secondary" style="width: 0%">0%</div>
+                        {% else %}
+                        <div class="progress-bar bg-warning" style="width: 10%">10%</div>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">Task Progress</small>
+                </div>
+                
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-user"></i> <strong>Created by:</strong> {{ task.created_by.get_full_name|default:task.created_by.username }}</li>
+                    <li><i class="fas fa-calendar-plus"></i> <strong>Created:</strong> {{ task.created_at|date:"M d, Y" }}</li>
+                    <li><i class="fas fa-calendar-check"></i> <strong>Due:</strong> {{ task.due_date|date:"M d, Y" }}</li>
+                    <li><i class="fas fa-comments"></i> <strong>Comments:</strong> {{ comments.count }}</li>
+                </ul>
+                
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{% url 'tasks:task_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Tasks
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle status update buttons
+    const statusButtons = document.querySelectorAll('.status-btn');
+    statusButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const status = this.dataset.status;
+            const taskId = {{ task.pk }};
+            
+            fetch(`/tasks/${taskId}/toggle-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: `status=${status}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Failed to update status');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
